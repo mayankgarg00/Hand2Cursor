@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand2Cursor — Touchless Cursor Control</title>
+    <meta name="description" content="Navigate your desktop effortlessly using hand gestures. Powered by advanced computer vision to turn your webcam into an invisible mouse.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="cursor-glow"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <nav id="navbar">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <span class="logo-icon">✨</span>
+                <span class="logo-text">Hand2<span class="logo-accent">Cursor</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="#live-demo">Live Demo</a>
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#architecture">Architecture</a>
+                <a href="#gestures">Gestures</a>
+            </div>
+            <a href="#live-demo" class="nav-cta">Try It Live</a>
+        </div>
+    </nav>
+
+    <header id="hero">
+        <div class="hero-bg-grid"></div>
+        <div class="hero-content">
+            <div class="hero-badge">✨ Touchless Navigation System</div>
+            <h1>Command Your Screen<br><span class="gradient-text">Without A Touch</span></h1>
+            <p class="hero-subtitle">Hand2Cursor turns your standard webcam into an intelligent input device. Point, click, and drag with seamless hand gestures, completely eliminating the need for physical hardware.</p>
+            <div class="hero-actions">
+                <a href="#live-demo" class="btn btn-primary"><span>Try Live Demo</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+                <a href="#how-it-works" class="btn btn-ghost"><span>Learn More</span></a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat"><span class="stat-num">21</span><span class="stat-label">Hand Landmarks</span></div>
+                <div class="stat-divider"></div>
+                <div class="stat"><span class="stat-num">30+</span><span class="stat-label">FPS Real-time</span></div>
+                <div class="stat-divider"></div>
+                <div class="stat"><span class="stat-num">3</span><span class="stat-label">Gesture Types</span></div>
+            </div>
+        </div>
+        <div class="hero-image">
+            <div class="hero-img-glow"></div>
+            <img src="assets/hero.png" alt="AI Hand Tracking Visualization" id="hero-img">
+        </div>
+    </header>
+
+    <section id="live-demo">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Interactive</span>
+                <h2>Live <span class="gradient-text">Demo</span></h2>
+                <p>Start the hand tracker and see it working in real-time right here</p>
+            </div>
+            <div class="demo-container">
+                <div class="demo-feed-wrap">
+                    <div class="demo-feed" id="demo-feed">
+                        <div class="demo-placeholder" id="demo-placeholder">
+                            <div class="demo-placeholder-icon">🖐️</div>
+                            <p>Click <strong>Start Tracking</strong> to activate your webcam</p>
+                            <p class="demo-placeholder-sub">The ML pipeline will detect your hand and stream the results here</p>
+                        </div>
+                        <img id="video-stream" src="" alt="Live Hand Tracking Feed" style="display:none;">
+                    </div>
+                    <div class="demo-controls">
+                        <button id="btn-start" class="btn btn-primary demo-btn" onclick="startTracking()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                            <span>Start Tracking</span>
+                        </button>
+                        <button id="btn-stop" class="btn btn-danger demo-btn" onclick="stopTracking()" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                            <span>Stop</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="demo-sidebar">
+                    <div class="demo-status-card">
+                        <h4>System Status</h4>
+                        <div class="status-row">
+                            <span class="status-label">Pipeline</span>
+                            <span class="status-value" id="status-pipeline">
+                                <span class="status-dot offline"></span> Offline
+                            </span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Frame Rate</span>
+                            <span class="status-value" id="status-fps">— FPS</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Current Action</span>
+                            <span class="status-value" id="status-action">—</span>
+                        </div>
+                    </div>
+                    <div class="demo-status-card">
+                        <h4>Gesture Log</h4>
+                        <div class="gesture-log" id="gesture-log">
+                            <div class="log-empty">Waiting for gestures...</div>
+                        </div>
+                    </div>
+                    <div class="demo-status-card demo-instructions">
+                        <h4>Quick Guide</h4>
+                        <ul>
+                            <li>☝️ Point index finger to move cursor</li>
+                            <li>🤏 Pinch thumb + index = left click</li>
+                            <li>🤌 Double pinch = right click</li>
+                            <li>✊ Fist = drag (experimental)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Capabilities</span>
+                <h2>Packed with <span class="gradient-text">Powerful Features</span></h2>
+                <p>Everything you need for a seamless touchless experience</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card featured">
+                    <div class="feature-icon">🖐️</div>
+                    <h3>Real-time Hand Tracking</h3>
+                    <p>Detects and tracks 21 hand landmarks per frame using Google MediaPipe's state-of-the-art ML pipeline.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🖱️</div>
+                    <h3>Cursor Movement</h3>
+                    <p>Your index fingertip becomes the mouse pointer, mapped precisely from webcam space to full screen coordinates.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👆</div>
+                    <h3>Left &amp; Right Click</h3>
+                    <p>Pinch thumb + index for left click. Add thumb + middle pinch simultaneously for right click.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>EMA Smoothing</h3>
+                    <p>Exponential Moving Average filter eliminates jitter for precise, smooth cursor motion across the screen.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Click Cooldown</h3>
+                    <p>Timestamp-based cooldown prevents accidental repeated clicks during sustained pinch gestures.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Visual Feedback</h3>
+                    <p>Live gesture visualization with connection lines, pinch indicators, and expanding ring click animations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Pipeline</span>
+                <h2>How It <span class="gradient-text">Works</span></h2>
+                <p>A five-stage real-time processing pipeline</p>
+            </div>
+            <div class="pipeline">
+                <div class="pipeline-step">
+                    <div class="step-number">01</div>
+                    <div class="step-content">
+                        <h3>Video Capture</h3>
+                        <p>OpenCV captures live frames from your webcam at 640×480, then flips horizontally for a natural mirror view.</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">02</div>
+                    <div class="step-content">
+                        <h3>Hand Detection</h3>
+                        <p>Each BGR frame is converted to RGB and fed into MediaPipe's HandLandmarker, which outputs 21 normalized (x, y, z) landmarks per hand.</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">03</div>
+                    <div class="step-content">
+                        <h3>Gesture Recognition</h3>
+                        <p>Euclidean distance between fingertip landmarks determines pinch gestures. Single pinch = left click, double pinch = right click.</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">04</div>
+                    <div class="step-content">
+                        <h3>Coordinate Mapping</h3>
+                        <p>Index finger position within a virtual boundary is normalized and mapped to full screen coordinates with configurable sensitivity.</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">05</div>
+                    <div class="step-content">
+                        <h3>Action Execution</h3>
+                        <p>Smoothed coordinates drive PyAutoGUI to move the system cursor or perform clicks, with cooldown logic preventing duplicates.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="pipeline-image-row">
+                <div class="pipeline-img-card">
+                    <img src="assets/landmarks.png" alt="21 Hand Landmarks">
+                    <span>21-Point Landmark Mesh</span>
+                </div>
+                <div class="pipeline-img-card">
+                    <img src="assets/pinch.png" alt="Pinch Gesture Detection">
+                    <span>Pinch Gesture Detection</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Design</span>
+                <h2>System <span class="gradient-text">Architecture</span></h2>
+                <p>Clean modular design with three core components</p>
+            </div>
+            <div class="arch-diagram">
+                <div class="arch-node webcam">
+                    <div class="arch-icon">📷</div>
+                    <h4>Webcam</h4>
+                    <p>OpenCV VideoCapture</p>
+                </div>
+                <div class="arch-arrow">
+                    <svg width="60" height="24" viewBox="0 0 60 24"><path d="M0 12h50M50 12l-8-8M50 12l-8 8" stroke="url(#arrowGrad)" stroke-width="2" fill="none"/><defs><linearGradient id="arrowGrad" x1="0" y1="0" x2="60" y2="0"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs></svg>
+                </div>
+                <div class="arch-node tracker">
+                    <div class="arch-icon">🧠</div>
+                    <h4>HandTracker</h4>
+                    <p>MediaPipe Tasks API</p>
+                    <span class="arch-file">hand_tracker.py</span>
+                </div>
+                <div class="arch-arrow">
+                    <svg width="60" height="24" viewBox="0 0 60 24"><path d="M0 12h50M50 12l-8-8M50 12l-8 8" stroke="url(#arrowGrad2)" stroke-width="2" fill="none"/><defs><linearGradient id="arrowGrad2" x1="0" y1="0" x2="60" y2="0"><stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs></svg>
+                </div>
+                <div class="arch-node controller">
+                    <div class="arch-icon">🎮</div>
+                    <h4>GestureController</h4>
+                    <p>PyAutoGUI Actions</p>
+                    <span class="arch-file">gesture_controller.py</span>
+                </div>
+                <div class="arch-arrow">
+                    <svg width="60" height="24" viewBox="0 0 60 24"><path d="M0 12h50M50 12l-8-8M50 12l-8 8" stroke="url(#arrowGrad3)" stroke-width="2" fill="none"/><defs><linearGradient id="arrowGrad3" x1="0" y1="0" x2="60" y2="0"><stop offset="0%" stop-color="#ec4899"/><stop offset="100%" stop-color="#f97316"/></linearGradient></defs></svg>
+                </div>
+                <div class="arch-node output">
+                    <div class="arch-icon">🖥️</div>
+                    <h4>System Cursor</h4>
+                    <p>OS Mouse Events</p>
+                </div>
+            </div>
+            <div class="arch-orchestrator">
+                <span>Orchestrated by <strong>main.py</strong> — captures frames, calls tracker, calls controller, renders HUD in a continuous loop</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="gestures">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Controls</span>
+                <h2>Supported <span class="gradient-text">Gestures</span></h2>
+                <p>Intuitive hand movements mapped to mouse actions</p>
+            </div>
+            <div class="gesture-cards">
+                <div class="gesture-card">
+                    <div class="gesture-visual">☝️</div>
+                    <h3>Move Cursor</h3>
+                    <p>Point with your index finger. The fingertip position controls the mouse pointer across your entire screen.</p>
+                    <div class="gesture-tag">Index Finger</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-visual">🤏</div>
+                    <h3>Left Click</h3>
+                    <p>Pinch your thumb and index finger together. When the distance drops below the threshold, a left click fires.</p>
+                    <div class="gesture-tag">Thumb + Index Pinch</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-visual">🤌</div>
+                    <h3>Right Click</h3>
+                    <p>Simultaneously pinch thumb+index and thumb+middle fingers. Both pinch conditions must be active at once.</p>
+                    <div class="gesture-tag">Double Pinch</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-visual">✊</div>
+                    <h3>Drag &amp; Drop</h3>
+                    <p>Close all fingers into a fist to initiate drag. Release to drop. Experimental feature for advanced control.</p>
+                    <div class="gesture-tag experimental">Experimental</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="setup">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Quick Start</span>
+                <h2>Get Up &amp; <span class="gradient-text">Running</span></h2>
+                <p>Three steps to touchless control</p>
+            </div>
+            <div class="setup-steps">
+                <div class="setup-step">
+                    <div class="setup-num">1</div>
+                    <h3>Clone &amp; Install</h3>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-title">Terminal</span></div>
+                        <pre><code>git clone https://github.com/mayankgarg00/Hand2Cursor.git
+cd Hand2Cursor
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt</code></pre>
+                    </div>
+                </div>
+                <div class="setup-step">
+                    <div class="setup-num">2</div>
+                    <h3>Download Model</h3>
+                    <p class="setup-desc">Download the <code>hand_landmarker.task</code> model file from <a href="https://developers.google.com/mediapipe/solutions/vision/hand_landmarker" target="_blank">MediaPipe</a> and place it in the project root directory.</p>
+                </div>
+                <div class="setup-step">
+                    <div class="setup-num">3</div>
+                    <h3>Run the Application</h3>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-title">Terminal</span></div>
+                        <pre><code>python main.py</code></pre>
+                    </div>
+                    <p class="setup-desc">Press <kbd>Q</kbd> to quit. Edit constants in <code>main.py</code> to adjust sensitivity, smoothing, and thresholds.</p>
+                </div>
+            </div>
+            <div class="config-table-wrap">
+                <h3>Configuration Parameters</h3>
+                <table class="config-table">
+                    <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>CAMERA_INDEX</code></td><td>0</td><td>Webcam device index</td></tr>
+                        <tr><td><code>FRAME_MARGIN</code></td><td>80</td><td>Virtual boundary margin in pixels</td></tr>
+                        <tr><td><code>SMOOTHING</code></td><td>0.35</td><td>EMA factor (lower = smoother)</td></tr>
+                        <tr><td><code>CLICK_COOLDOWN</code></td><td>0.4s</td><td>Minimum interval between clicks</td></tr>
+                        <tr><td><code>PINCH_THRESHOLD</code></td><td>40px</td><td>Distance to trigger a pinch</td></tr>
+                        <tr><td><code>SENSITIVITY</code></td><td>1.0</td><td>Cursor speed multiplier</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="tech-stack">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-tag">Built With</span>
+                <h2>Technology <span class="gradient-text">Stack</span></h2>
+            </div>
+            <div class="tech-grid">
+                <div class="tech-card"><div class="tech-logo">🐍</div><h4>Python 3.8+</h4><p>Core runtime</p></div>
+                <div class="tech-card"><div class="tech-logo">👁️</div><h4>OpenCV</h4><p>Video capture &amp; rendering</p></div>
+                <div class="tech-card"><div class="tech-logo">🧠</div><h4>MediaPipe</h4><p>Hand landmark detection</p></div>
+                <div class="tech-card"><div class="tech-logo">🖱️</div><h4>PyAutoGUI</h4><p>System mouse control</p></div>
+                <div class="tech-card"><div class="tech-logo">🔢</div><h4>NumPy</h4><p>Numerical operations</p></div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="logo-icon">✨</span>
+                <span class="logo-text">Hand2<span class="logo-accent">Cursor</span></span>
+            </div>
+            <p>Next-generation optical mouse control through intelligent hand tracking.</p>
+            <div class="footer-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">Pipeline</a>
+                <a href="#architecture">Architecture</a>
+                <a href="#setup">Setup</a>
+            </div>
+            <div class="footer-copy">&copy; 2026 Hand2Cursor. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
